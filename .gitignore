@@ -1,0 +1,11 @@
+﻿.git/
+.agents/
+.codex/
+__pycache__/
+*.pyc
+*.log
+*.tmp
+outputs/
+work/
+02_data/raw/source_manifest.csv
+repository_manifest.json

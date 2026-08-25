@@ -1,0 +1,78 @@
+records:
+  - id: FACT-001
+    kind: FACT
+    statement: "The workload contains 50000 non-preemptive tasks arriving in hours 0-2399."
+    sources: ["workload_trace.xlsx"]
+    confidence: HIGH
+    affected_questions: [Q1, Q2, Q4]
+    status: ACCEPTED
+  - id: FACT-002
+    kind: FACT
+    statement: "Tasks may occupy hours 0-2405 but may not occupy hour 2406."
+    sources: ["problem statement", "attachment 1"]
+    confidence: HIGH
+    affected_questions: [Q1, Q2, Q4]
+    status: ACCEPTED
+  - id: FACT-003
+    kind: FACT
+    statement: "Q3 fixed IT load equals Baseline_AI_IT_Load_MW plus NonAI_IT_Load_MW."
+    sources: ["problem statement note 4", "region_time_data.xlsx"]
+    confidence: HIGH
+    affected_questions: [Q3]
+    status: ACCEPTED
+  - id: FACT-004
+    kind: FACT
+    statement: "Optimized AI load is recomputed from GPU demand, overlap, and power_mapping."
+    sources: ["attachment 1", "power_mapping.xlsx"]
+    confidence: HIGH
+    affected_questions: [Q1, Q2, Q4]
+    status: ACCEPTED
+  - id: FACT-005
+    kind: FACT
+    statement: "Network feasibility uses each task MaxLatency_ms and the directed latency matrix."
+    sources: ["workload_trace.xlsx", "network_latency.xlsx"]
+    confidence: HIGH
+    affected_questions: [Q1, Q2, Q4]
+    status: ACCEPTED
+  - id: ASSUMPTION-001
+    kind: ASSUMPTION
+    statement: "The attachment-reproduction baseline x0 fixes TargetRegion=SourceRegion and StartHour=ArrivalHour for all tasks; Q1's flexible no-migration schedule is separately named x_Q1; Q2 and Q4 open EligibleRegions."
+    sources: ["decision log DEC-003"]
+    confidence: MEDIUM
+    affected_questions: [Q1, Q2, Q4]
+    status: ACCEPTED
+  - id: ASSUMPTION-002
+    kind: ASSUMPTION
+    statement: "Q2 disables storage but permits renewable export; GridSell equals RenewableSell and no grid purchase is resold."
+    sources: ["decision log DEC-004"]
+    confidence: MEDIUM
+    affected_questions: [Q2, Q4]
+    status: ACCEPTED
+  - id: FACT-006
+    kind: FACT
+    statement: "Storage data define SOC_MWh as end-of-hour and InitialSOC_MWh before Hour 0; region-time data contain Closure_2400_2406 with operational Hour 2406 fields."
+    sources: ["storage_information.xlsx", "region_time_data.xlsx", "02_data/quality/two_gate_audit.md"]
+    confidence: HIGH
+    affected_questions: [Q3, Q4]
+    status: ACCEPTED
+  - id: ASSUMPTION-003
+    kind: ASSUMPTION
+    statement: "Energy operation includes hours 0-2406; SOC_-1=InitialSOC and SOC_2406 is the end-of-hour terminal state."
+    sources: ["decision log DEC-005", "02_data/quality/two_gate_audit.md"]
+    confidence: HIGH
+    affected_questions: [Q3, Q4]
+    status: ACCEPTED
+  - id: FACT-007
+    kind: FACT
+    statement: "B3_ref equals P_fac(x0) for the source-region, arrival-start baseline within source rounding: max AI-load difference 3.3333448e-7 MW over 14442 region-hours; x0 nevertheless has 44 GPU-capacity violations and is not a feasible M00/M01 baseline."
+    sources: ["02_data/quality/two_gate_audit.md"]
+    confidence: HIGH
+    affected_questions: [Q3, Q4]
+    status: ACCEPTED
+  - id: DERIVED-001
+    kind: DERIVED
+    statement: "A feasible no-migration common baseline x_base schedules all 50000 tasks, delays 90 flexible tasks, and has zero assignment, release, real-time, deadline, Hour-2406, local-SLA, GPU, IT, or facility violations; maximum GPU utilization is 99.9931%."
+    sources: ["04_algorithms/build_feasible_baseline.py", "05_validation/x_base_validation.md"]
+    confidence: HIGH
+    affected_questions: [Q1, Q2, Q4]
+    status: ACCEPTED
