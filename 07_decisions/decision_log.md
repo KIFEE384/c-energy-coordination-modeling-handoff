@@ -1,5 +1,25 @@
 # Decision Log
 
+## DEC-008 Algorithm handoff: M00 no-export baseline and cost metric
+
+- Date: 2026-08-26
+- Owner: algorithm teammate (assisted)
+- Affected questions: Q2, Q3, Q4 and the four-cell comparison
+- Decision: in the four-cell ablation, M00 (chi=0, sigma=0) is the pure counterfactual with
+  **no storage and no renewable export** (RE direct use maximized, surplus curtailed, grid makes up
+  the rest). Export is opened from M10 onward per DEC-004. The reported `Cost_CNY` is the
+  **gross grid-purchase cost** (sum of GridPurchase*price over hours 0..2406, matching the model's
+  "购电成本…结算" wording); sell revenue and net cost are reported as extension columns
+  (`SellRevenue_CNY`, `NetCost_CNY`). Optimization objectives minimize net cost (purchase minus
+  revenue), which is equivalent to maximizing renewable direct use and export.
+- Consequences: M00 cost is near zero because attachment renewables (mean ~800 MW/region) exceed
+  facility loads (~450 MW/region) almost everywhere; only RegionF has a single RE-deficit hour
+  (31.6 MW). B_ref remains the attachment's official operation (2.23B CNY gross purchase, 2.05M tCO2,
+  RE utilization 31.1%) and is a reference, not an optimization result. S_K is computed with the
+  improvement definitions in `04_algorithms/` output reports.
+- Validation: all energy cells pass the conservation, SOC, boundary and mutual-exclusion assertions
+  (see `05_validation/当前状态与验收.md` update and `04_algorithms/results/validation_report.md`).
+
 ## DEC-001 Audit before repair
 
 - Date: 2026-08-26
