@@ -1,24 +1,23 @@
 # Decision Log
 
-## DEC-008 Algorithm handoff: M00 no-export baseline and cost metric
+## DEC-009 Algorithm handoff: cost metric, and M00_Q1/M00_fair alignment
 
 - Date: 2026-08-26
-- Owner: algorithm teammate (assisted)
+- Owner: algorithm teammate (assisted); amended after lead's DEC-008 export-policy synchronization
 - Affected questions: Q2, Q3, Q4 and the four-cell comparison
-- Decision: in the four-cell ablation, M00 (chi=0, sigma=0) is the pure counterfactual with
-  **no storage and no renewable export** (RE direct use maximized, surplus curtailed, grid makes up
-  the rest). Export is opened from M10 onward per DEC-004. The reported `Cost_CNY` is the
-  **gross grid-purchase cost** (sum of GridPurchase*price over hours 0..2406, matching the model's
-  "购电成本…结算" wording); sell revenue and net cost are reported as extension columns
-  (`SellRevenue_CNY`, `NetCost_CNY`). Optimization objectives minimize net cost (purchase minus
-  revenue), which is equivalent to maximizing renewable direct use and export.
-- Consequences: M00 cost is near zero because attachment renewables (mean ~800 MW/region) exceed
-  facility loads (~450 MW/region) almost everywhere; only RegionF has a single RE-deficit hour
-  (31.6 MW). B_ref remains the attachment's official operation (2.23B CNY gross purchase, 2.05M tCO2,
-  RE utilization 31.1%) and is a reference, not an optimization result. S_K is computed with the
-  improvement definitions in `04_algorithms/` output reports.
-- Validation: all energy cells pass the conservation, SOC, boundary and mutual-exclusion assertions
-  (see `05_validation/当前状态与验收.md` update and `04_algorithms/results/validation_report.md`).
+- Decision: the reported `Cost_CNY` is the **gross grid-purchase cost** (sum of GridPurchase*price over
+  hours 0..2406, matching the model's "购电成本…结算" wording); sell revenue and net cost are reported
+  as extension columns (`SellRevenue_CNY`, `NetCost_CNY`). Optimization objectives minimize net cost
+  (purchase minus revenue), equivalent to maximizing renewable direct use and export.
+  Per DEC-008, the v1 no-export M00 baseline is retained only as the Q1 explanatory state `M00_Q1`
+  (`ExportPolicy=FORBID`, not part of four-cell attribution); the four-cell fair baseline is
+  `M00_fair` (`ExportPolicy=PERMIT_RE_ONLY`, identical export caps/sell prices to M10/M01-xbase/M11).
+- Consequences: only `M00_fair` may appear in four-cell improvement rates and `S_K`. All runs record
+  `ExportPolicy` and input sources in `run_manifest`; zero-purchase/zero-carbon/high-revenue values are
+  backed by `witness_extremes.csv`. B_ref remains the attachment's official operation (2.23B CNY gross
+  purchase, 2.05M tCO2, RE utilization 31.1%) and is a reference, not an optimization result.
+- Validation: energy cells pass conservation/SOC/mutual-exclusion/boundary assertions; the
+  result-evidence gate requires regenerated outputs under the unified export policy.
 
 ## DEC-001 Audit before repair
 
@@ -81,3 +80,14 @@
 - Decision: freeze `02_data/processed/x_base_task_schedule.csv` as the common hard-constraint task baseline. It fixes target region to source region, starts real-time tasks at arrival, and delays flexible tasks only as needed using deadline-prioritized earliest-feasible placement.
 - Validation: 50,000/50,000 tasks scheduled; 90 flexible tasks delayed; zero unique-assignment, release, real-time, deadline, Hour-2406, local-SLA, GPU, IT and facility violations. Maximum GPU utilization is 99.9931%.
 - Consequences: use `x_base` for M00/M01 and as the closed-flexibility reference for M10/M11. Keep `x0` only for attachment load reproduction and keep Q3 as an external fixed-load experiment. `S_K` still requires all four optimization cells to be solved and validated.
+
+## DEC-008 Export-policy synchronization
+
+- Date: 2026-08-26
+- Owner: lead + independent semantic review
+- Affected questions: Q1-Q4
+- Evidence: `03_models/统一双柔性模型_复审修订版.md`; `05_validation/semantic_design_gate.md`.
+- Decision: Set `ExportPolicy=PERMIT_RE_ONLY` for `M00_fair`, `M10`, `M01-xbase`, `M11`, and `Q3-B3ref`. These runs use identical attachment `MaxGridExport`, `SellLimit`, and sell-price inputs; `GridSell=RenewableSell`; grid purchase cannot be resold. `M00_Q1` keeps `ExportPolicy=FORBID` because it only explains Q1 and does not enter four-cell attribution.
+- Alternatives rejected: compare a no-export M00 with export-enabled treatments; this changes both a policy boundary and the flexibility factor, so neither improvement rates nor `S_K` are identifiable.
+- Consequences: every run must record the policy and input sources in `run_manifest`. Q3 remains an independent fixed-load result and cannot be compared directly with `M01-xbase` even though their energy boundary is synchronized.
+- Validation: require identical export-policy fields and sources across the four treatment rows, then re-evaluate energy schedules and KPIs.

@@ -7,7 +7,7 @@
 ## 2. 必读顺序
 
 1. `07_decisions/canonical_fact_ledger.yaml`：冻结事实和决策；
-2. `03_models/统一双柔性模型.md`：统一数学模型；
+2. `03_models/统一双柔性模型_复审修订版.md`：当前统一数学模型；
 3. `03_models/rationale/model_rationale.md`：题面到模型的理由和比较方法；
 4. `04_algorithms/算法实现接口.md`：输入、输出、规模和求解接口；
 5. `05_validation/当前状态与验收.md`：当前权威状态和阻断条件；
@@ -22,7 +22,8 @@
 - `x_Q1`：Q1 无迁移基础调度，弹性任务可延后；
 - `x_base`：已验收的可行共同任务边界，四格实验使用；
 - `B3_ref`：Q3 题设给定负荷，独立报告；不直接等同于四格 `M01`；
-- `M00/M01/M10/M11`：必须在 `x_base` 的统一任务边界和统一能源口径下求解。
+- `M00_Q1`：第一问解释性基线，禁止外送，不进入四格比较；
+- `M00_fair/M01-xbase/M10/M11`：必须在 `x_base` 的统一任务边界、统一能源口径和同一 `ExportPolicy=PERMIT_RE_ONLY` 下求解。
 
 ## 4. 四问关系
 
@@ -41,6 +42,8 @@ Q1完成需求画像、预测评价和无迁移基础调度；Q2首次开放时�
 `GridLoad+RE_direct+Discharge=FacilityLoad`；
 `GridPurchase=GridLoad+GridCharge`；
 `SOC_t=SOC_(t-1)+eta_c*ChargePower_t-Discharge_t/eta_d`。
+
+除 `M00_Q1` 外，统一采用 `GridSell=RE_sell`、`RE_avail=RE_direct+RE_charge+RE_sell+Curtailment`，并共同使用附件给定的外送上限和售电价格；禁止购电转售。`Q3-B3ref` 也复用此能源边界，但与四格 `M01-xbase` 分表、分图、分结论。
 
 ## 6. 完成标准
 

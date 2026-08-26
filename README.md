@@ -4,7 +4,7 @@ This repository is the complete, auditable mathematical-modeling handoff for C�
 
 ## Agent / teammate reading order
 
-**For any Agent, read first:** `00_overview/Agent总交接说明.md`, then `07_decisions/canonical_fact_ledger.yaml`, `03_models/统一双柔性模型.md`, `04_algorithms/算法实现接口.md`, and `05_validation/当前状态与验收.md`.
+**For any Agent, read first:** `00_overview/Agent总交接说明.md`, then `07_decisions/canonical_fact_ledger.yaml`, `03_models/统一双柔性模型_复审修订版.md`, `04_algorithms/算法实现接口.md`, and `05_validation/当前状态与验收.md`.
 
 **For the algorithm teammate:** read `00_overview/建模手最终交接总结.md` sections “交给算法手” and `04_algorithms/算法实现接口.md`.
 
@@ -16,7 +16,7 @@ This repository is the complete, auditable mathematical-modeling handoff for C�
 
 1. `00_overview/status_board.md`
 2. `07_decisions/canonical_fact_ledger.yaml` and `decision_log.md`
-3. `03_models/统一双柔性模型.md`
+3. `03_models/统一双柔性模型_复审修订版.md`
 4. `03_models/rationale/model_rationale.md`
 5. `04_algorithms/算法实现接口.md`
 6. `05_validation/acceptance_tests.md`

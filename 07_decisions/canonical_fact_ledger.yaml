@@ -76,3 +76,10 @@ records:
     confidence: HIGH
     affected_questions: [Q1, Q2, Q4]
     status: ACCEPTED
+  - id: ASSUMPTION-004
+    kind: ASSUMPTION
+    statement: "For comparable energy runs, M00_fair, M10, M01-xbase, M11, and Q3-B3ref use ExportPolicy=PERMIT_RE_ONLY with the same attachment export caps and sell prices; GridSell equals RenewableSell and grid purchase may not be resold. M00_Q1 is a Q1-only explanatory no-export state and never enters four-cell attribution."
+    sources: ["decision log DEC-008", "03_models/统一双柔性模型_复审修订版.md"]
+    confidence: MEDIUM
+    affected_questions: [Q1, Q2, Q3, Q4]
+    status: ACCEPTED

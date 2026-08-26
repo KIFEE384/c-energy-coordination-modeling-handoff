@@ -4,15 +4,15 @@
 |---|---|---|---|---|
 | problem | FROZEN | lead + data audit | `07_decisions/canonical_fact_ledger.yaml` | none |
 | data | GATES PASSED | data audit | `02_data/quality/two_gate_audit.md` | none |
-| model | FROZEN | lead + model audit | `03_models/统一双柔性模型.md` | none |
+| model | FROZEN | lead + model audit | `03_models/统一双柔性模型_复审修订版.md` | none |
 | rationale | VERIFIED FOR MODEL CHOICE | dedicated rationale + opposing review | `03_models/rationale/model_rationale.md` | empirical claims now backed by solve |
-| algorithm | RESULTS DELIVERED | algorithm handoff | `04_algorithms/results/kpi_summary.csv` | paper-side review of numbers |
-| validation | ENERGY/TASK CHECKS PASSED | opposing review | `04_algorithms/results/validation_report.md` | none |
-| paper | NUMBERS AVAILABLE | paper handoff | `06_paper/数据洞察与作图清单.md` | write narrative with honesty labels |
+| algorithm | REVISION IN PROGRESS | algorithm handoff | `04_algorithms/results/` | align four cells to `ExportPolicy=PERMIT_RE_ONLY`; emit run_manifest/witness/gap; S_K with M00_fair baseline |
+| validation | V1 CHECKS PASSED; NEW GATES PENDING | opposing review | `05_validation/result_evidence_gate.md` | re-run energy/task checks under unified export policy |
+| paper | NUMBERS BLOCKED UNTIL REVISION | paper handoff | `06_paper/数据洞察与作图清单.md` | do not cite v1 numbers for four-cell claims |
 
-Current status: model semantics `FROZEN`; boundary gates `PASSED`; `x_base` task baseline `PASSED`;
-Q1 prediction/schedule `PASSED`; M00/M01/Q3 energy cells `PASSED` (zero violations);
-M10/M11 task-energy results `DELIVERED` (all cells zero cost/carbon, zero violations);
-`S_K` calculated for recommended scenario λ=100 (task and storage flexibilities are substitutes).
-B_ref (attachment official operation) remains the reference, not an optimization result.
-All approximate claims are honestly labelled (no global Pareto optimality).
+Current status: model semantics `FROZEN`（复审修订版）; boundary gates `PASSED`; `x_base` task baseline `PASSED`;
+v1 algorithm results were delivered under the old semantics (M00 no-export), which is now `M00_Q1` (Q1-only).
+The four-cell fair baseline `M00_fair` and all treatment cells must use identical
+`ExportPolicy=PERMIT_RE_ONLY` plus attachment export caps and sell prices; `S_K` uses `M00_fair` as baseline.
+Until regenerated outputs pass the result-evidence gate, four-cell improvement rates, `S_K` and Pareto
+claims remain `BLOCKED`. B_ref (attachment official operation) remains the reference, not an optimization result.
