@@ -1,0 +1,7 @@
+ModelID,ScenarioID,ExportPolicy,ExportCapSource,SellPriceSource,TaskScheduleHash,FacilityLoadHash,EnergyScheduleHash,CodeRevision,TimeRange,CreatedAt
+M00_Q1,base,FORBID,not_applicable,not_applicable,<fill_after_run>,<fill_after_run>,<fill_after_run>,<git_commit>,0..2406,<UTC_timestamp>
+M00_fair,base,PERMIT_RE_ONLY,region_time_data.xlsx,region_time_data.xlsx,<fill_after_run>,<fill_after_run>,<fill_after_run>,<git_commit>,0..2406,<UTC_timestamp>
+M10,base,PERMIT_RE_ONLY,region_time_data.xlsx,region_time_data.xlsx,<fill_after_run>,<fill_after_run>,<fill_after_run>,<git_commit>,0..2406,<UTC_timestamp>
+M01-xbase,base,PERMIT_RE_ONLY,region_time_data.xlsx,region_time_data.xlsx,<fill_after_run>,<fill_after_run>,<fill_after_run>,<git_commit>,0..2406,<UTC_timestamp>
+M11,base,PERMIT_RE_ONLY,region_time_data.xlsx,region_time_data.xlsx,<fill_after_run>,<fill_after_run>,<fill_after_run>,<git_commit>,0..2406,<UTC_timestamp>
+Q3-B3ref,base,PERMIT_RE_ONLY,region_time_data.xlsx,region_time_data.xlsx,<not_applicable>,<fill_after_run>,<fill_after_run>,<git_commit>,0..2406,<UTC_timestamp>

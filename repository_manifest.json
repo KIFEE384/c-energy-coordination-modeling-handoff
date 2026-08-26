@@ -1,0 +1,30 @@
+{
+  "repository": "c-energy-coordination-modeling-handoff",
+  "purpose": "Auditable mathematical-modeling handoff for Huashu Cup C题",
+  "visibility": "public",
+  "normative_model": "03_models/统一双柔性模型_复审修订版.md",
+  "status": "MODEL_SEMANTICS_FROZEN_NUMERICAL_RESULTS_PENDING",
+  "raw_data_policy": "Raw attachments are not tracked; only source_manifest.csv and derived summaries are included.",
+  "required_entry_points": [
+    "00_overview/Agent总交接说明.md",
+    "07_decisions/canonical_fact_ledger.yaml",
+    "03_models/统一双柔性模型_复审修订版.md",
+    "04_algorithms/算法实现接口.md",
+    "05_validation/当前状态与验收.md"
+  ],
+  "model_ids": [
+    "M00_Q1",
+    "M00_fair",
+    "M10",
+    "M01-xbase",
+    "M11",
+    "Q3-B3ref"
+  ],
+  "export_policy": {
+    "comparative_runs": "PERMIT_RE_ONLY",
+    "q1_explanatory_baseline": "FORBID",
+    "constraint": "GridSell=RenewableSell; no grid-to-resale"
+  },
+  "result_gate": "05_validation/result_evidence_gate.md",
+  "run_manifest_template": "05_validation/run_manifest_template.csv"
+}

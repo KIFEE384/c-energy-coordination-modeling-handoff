@@ -7,7 +7,7 @@
 - [x] 比较 `B3_ref` 与 `P_fac(x0)`：最大误差 `3.33e-7 MW`，MAE `2.74e-10 MW`，RMSE `9.20e-9 MW`；负荷口径门禁通过。
 - [x] 复现基准容量快检：`x0` 有 44 个 GPU 超限区域-小时，故不得直接作为四格共同基准。
 - [x] 生成满足全部硬约束的共同基准 `x_base`（由 Q1 无迁移、允许弹性任务延后的最早可行规则产生）：50,000/50,000 任务已排程，90 个弹性任务延后，唯一指派/实时即开/截止期/本地 SLA 零违约，GPU/IT/设施容量零超限。
-- [ ] 求解 M00/M01/M10/M11 并在同一 `x_base` 边界上通过能源守恒、SOC、购售电和 KPI 验收；完成后才允许计算 `S_K`。
+- [ ] 求解 `M00_fair/M01-xbase/M10/M11` 并在同一 `x_base` 边界、同一 `ExportPolicy=PERMIT_RE_ONLY` 下通过能源守恒、SOC、购售电和 KPI 验收；完成后才允许计算 `S_K`。`M00_Q1` 禁止外送且不得替代 `M00_fair`。
 - [x] Q2外送边界固定为允许新能源外送但无储能：`RE_avail=RE_direct+RE_sell+Curtailment`、`GridSell=RE_sell`、`RE_sell<=min(MaxGridExport,SellLimit)`；同时 `GridLoad+RE_direct=P_fac`、`GridPurchase=GridLoad`，禁止购电转售。
 
 ## 每次求解必须通过
@@ -16,11 +16,12 @@
 - [ ] Q1 `TargetRegion=SourceRegion`；Q2/Q4目标区域属于 `EligibleRegions_i`，且单向时延不超过上限。
 - [ ] GPU、IT、设施、购电、售电、SOC均不超限；新能源分流、负荷平衡、SOC递推残差在声明容差内。
 - [ ] Q2 `Charge=Discharge=GridCharge=RECharge=0` 且 `GridSell=RE_sell`；购售电互斥。
+- [ ] `run_manifest` 对 `M00_fair/M10/M01-xbase/M11/Q3-B3ref` 均记录相同的 `ExportPolicy`、`ExportCapSource` 和 `SellPriceSource`；只有 `M00_Q1` 为 `FORBID`。若任一行不同，四格改善率、协同指标和 Q3-M01 对照均禁止计算。
 - [ ] Q3不读 Q2 schedule；Q4改变可行任务区域或启动点后，`AI_IT_Load(x)` 至少一个逐时值改变，并与固定 Q2 任务反事实比较。
 
 ## 结果可信度
 
 - [ ] 预测只作留出评价，实际最后24小时调度使用实际任务。
 - [ ] Q2/Q4近似方案报告运行时间、上下界或小样本精确 gap，不声称全局 Pareto 最优。
-- [ ] 附件 `B_ref`、题设 `B3_ref`、可行共同基准 `x_base`、M00/M10/M01/M11 分表呈现；未生成 `x_base` 或未通过一致性检查时禁止报告 `S_K`。
+- [ ] 附件 `B_ref`、题设 `B3_ref`、可行共同基准 `x_base`、`M00_Q1/M00_fair/M10/M01-xbase/M11` 分表呈现；未生成 `x_base` 或未通过外送政策一致性检查时禁止报告 `S_K`。
 - [ ] 未实际求解优化方案的改善结论仍标记 `EXPECTED`；门禁通过不等于优化结果已计算。

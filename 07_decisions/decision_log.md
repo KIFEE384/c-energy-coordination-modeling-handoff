@@ -61,3 +61,14 @@
 - Decision: freeze `02_data/processed/x_base_task_schedule.csv` as the common hard-constraint task baseline. It fixes target region to source region, starts real-time tasks at arrival, and delays flexible tasks only as needed using deadline-prioritized earliest-feasible placement.
 - Validation: 50,000/50,000 tasks scheduled; 90 flexible tasks delayed; zero unique-assignment, release, real-time, deadline, Hour-2406, local-SLA, GPU, IT and facility violations. Maximum GPU utilization is 99.9931%.
 - Consequences: use `x_base` for M00/M01 and as the closed-flexibility reference for M10/M11. Keep `x0` only for attachment load reproduction and keep Q3 as an external fixed-load experiment. `S_K` still requires all four optimization cells to be solved and validated.
+
+## DEC-008 Export-policy synchronization
+
+- Date: 2026-08-26
+- Owner: lead + independent semantic review
+- Affected questions: Q1-Q4
+- Evidence: `03_models/统一双柔性模型_复审修订版.md`; `05_validation/semantic_design_gate.md`.
+- Decision: Set `ExportPolicy=PERMIT_RE_ONLY` for `M00_fair`, `M10`, `M01-xbase`, `M11`, and `Q3-B3ref`. These runs use identical attachment `MaxGridExport`, `SellLimit`, and sell-price inputs; `GridSell=RenewableSell`; grid purchase cannot be resold. `M00_Q1` keeps `ExportPolicy=FORBID` because it only explains Q1 and does not enter four-cell attribution.
+- Alternatives rejected: compare a no-export M00 with export-enabled treatments; this changes both a policy boundary and the flexibility factor, so neither improvement rates nor `S_K` are identifiable.
+- Consequences: every run must record the policy and input sources in `run_manifest`. Q3 remains an independent fixed-load result and cannot be compared directly with `M01-xbase` even though their energy boundary is synchronized.
+- Validation: require identical export-policy fields and sources across the four treatment rows, then re-evaluate energy schedules and KPIs.
