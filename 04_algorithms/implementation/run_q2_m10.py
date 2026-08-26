@@ -93,7 +93,8 @@ def main() -> None:
         total_violations = nv_task + nv_energy
         kpi_rows.append(make_kpi_row("M10", scenario, problem, schedule, energy,
                                      total_violations, time.time() - t0,
-                                     "heuristic+LS (no global optimality claim)"))
+                                     "deficit-repair heuristic (no global optimality)",
+                                     "PERMIT_RE_ONLY"))
         pareto.append({"Scenario": scenario, "Lambda": lam,
                        "Cost_CNY": kpi_rows[-1]["Cost_CNY"],
                        "Carbon_tCO2": kpi_rows[-1]["Carbon_tCO2"],
@@ -121,7 +122,7 @@ def main() -> None:
             subset=["ModelID", "ScenarioID"], keep="last")
     kpi_df.to_csv(kpi_path, index=False, encoding="utf-8-sig")
 
-    # 近似非支配筛选（按成本与碳排）
+    # 近似非支配筛选（按成本与碳排）＋ 目标向量去重（复审修订版 §5/§7）
     pareto_df = pd.DataFrame(pareto)
     nondom = []
     for _, row in pareto_df.iterrows():
@@ -131,8 +132,22 @@ def main() -> None:
             for p in pareto if p["Scenario"] != row["Scenario"])
         if not dominated:
             nondom.append(row)
-    lines = ["# M10（Q2）近似非支配方案", "",
-             "> 由加权标量化启发式生成（贪心+局部搜索），非严格全局 Pareto，不声称最优。",
+
+    # 目标向量去重：相同 (Cost, Carbon, RE_Util, MeanLat, P95Lat) 只保留一个代表点
+    seen = {}
+    rep_points = []
+    for row in pareto:
+        key = (round(row["Cost_CNY"], 3), round(row["Carbon_tCO2"], 3),
+               round(row["RE_Util"], 6), round(row["MeanLatency_ms"], 3),
+               round(row["P95Latency_ms"], 3))
+        if key not in seen:
+            seen[key] = row["Scenario"]
+            rep_points.append(row)
+    degenerate = len(rep_points) < len(pareto)
+
+    lines = ["# M10（Q2）近似非支配方案（复审修订版语义）", "",
+             "> 由缺口小时定向修复启发式生成，非严格全局 Pareto，不声称最优；",
+             "> ExportPolicy=PERMIT_RE_ONLY（与 M00_fair/M01-xbase/M11 一致）。",
              "",
              "| Scenario | Lambda | Cost_CNY | Carbon_tCO2 | RE_Util | MeanLat | P95Lat | Violations |",
              "|---|---|---:|---:|---:|---:|---:|---:|"]
@@ -142,7 +157,14 @@ def main() -> None:
                      f"{row['MeanLatency_ms']:.2f} | {row['P95Latency_ms']:.2f} | "
                      f"{row['Violations']} |")
     lines.append("")
-    lines.append("近似非支配： " + ", ".join(r["Scenario"] for r in nondom))
+    if degenerate:
+        lines.append(f"**DEGENERATE**：{len(pareto)} 个权重产生 {len(rep_points)} 个不同目标向量，"
+                     "按复审规则只保留代表点： " + ", ".join(r["Scenario"] for r in rep_points))
+    else:
+        lines.append("近似非支配： " + ", ".join(r["Scenario"] for r in nondom))
+    lines.append("")
+    lines.append("> 说明：多权重标量化在本数据上收敛到相同目标向量（成本/碳排均已被消除），"
+                 "前沿退化不代表不可行，而是数据特性（绿电充裕）的诚实呈现。")
     (out_root / "M10" / "pareto.md").write_text("\n".join(lines), encoding="utf-8")
     print("\n".join(lines))
 

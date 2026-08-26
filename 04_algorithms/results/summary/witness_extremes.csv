@@ -1,0 +1,41 @@
+﻿ModelID,Kind,ModelRegionHour,Value_MW_or_CNY,Evidence
+M00_Q1,PEAK_PURCHASE,RegionF Hour 2400,31.59786666666912,峰值购电区域-小时
+M00_Q1,DEFICIT,RegionF Hour 2400,31.6,设施负荷 571.8 MW > 可用新能源 540.2 MW
+M00_fair,PEAK_PURCHASE,RegionF Hour 2400,31.59786666666912,峰值购电区域-小时
+M00_fair,HIGH_REVENUE,RegionF Hour 548,104469.2,GridSell=220.0 MW × SellPrice=202.80 CNY/MWh
+M00_fair,HIGH_REVENUE,RegionF Hour 546,104469.2,GridSell=220.0 MW × SellPrice=202.80 CNY/MWh
+M00_fair,HIGH_REVENUE,RegionF Hour 547,104469.2,GridSell=220.0 MW × SellPrice=202.80 CNY/MWh
+M00_fair,HIGH_REVENUE,RegionF Hour 545,104467.0,GridSell=220.0 MW × SellPrice=202.80 CNY/MWh
+M00_fair,HIGH_REVENUE,RegionF Hour 713,104352.6,GridSell=220.0 MW × SellPrice=202.80 CNY/MWh
+M00_fair,DEFICIT,RegionF Hour 2400,31.6,设施负荷 571.8 MW > 可用新能源 540.2 MW
+M10,ZERO_PURCHASE,all,0.0,全部 14442 个区域-小时 GridPurchase=0（max=0.00e+00 MW）
+M10,ZERO_CARBON,all,0.0,全部 14442 个区域-小时购电为零，故碳排为零（口径：Carbon=GridPurchase*Intensity）
+M10,HIGH_REVENUE,RegionF Hour 548,104469.2,GridSell=220.0 MW × SellPrice=202.80 CNY/MWh
+M10,HIGH_REVENUE,RegionF Hour 547,104469.2,GridSell=220.0 MW × SellPrice=202.80 CNY/MWh
+M10,HIGH_REVENUE,RegionF Hour 546,104469.2,GridSell=220.0 MW × SellPrice=202.80 CNY/MWh
+M10,HIGH_REVENUE,RegionF Hour 545,104467.0,GridSell=220.0 MW × SellPrice=202.80 CNY/MWh
+M10,HIGH_REVENUE,RegionF Hour 713,104352.6,GridSell=220.0 MW × SellPrice=202.80 CNY/MWh
+M01-xbase,ZERO_PURCHASE,all,0.0,全部 14442 个区域-小时 GridPurchase=0（max=0.00e+00 MW）
+M01-xbase,ZERO_CARBON,all,0.0,全部 14442 个区域-小时购电为零，故碳排为零（口径：Carbon=GridPurchase*Intensity）
+M01-xbase,HIGH_REVENUE,RegionF Hour 546,104469.2,GridSell=220.0 MW × SellPrice=202.80 CNY/MWh
+M01-xbase,HIGH_REVENUE,RegionF Hour 548,104469.2,GridSell=220.0 MW × SellPrice=202.80 CNY/MWh
+M01-xbase,HIGH_REVENUE,RegionF Hour 547,104469.2,GridSell=220.0 MW × SellPrice=202.80 CNY/MWh
+M01-xbase,HIGH_REVENUE,RegionF Hour 545,104467.0,GridSell=220.0 MW × SellPrice=202.80 CNY/MWh
+M01-xbase,HIGH_REVENUE,RegionF Hour 549,104462.6,GridSell=220.0 MW × SellPrice=202.80 CNY/MWh
+M01-xbase,DEFICIT,RegionF Hour 2400,31.6,设施负荷 571.8 MW > 可用新能源 540.2 MW
+M11,ZERO_PURCHASE,all,0.0,全部 14442 个区域-小时 GridPurchase=0（max=0.00e+00 MW）
+M11,ZERO_CARBON,all,0.0,全部 14442 个区域-小时购电为零，故碳排为零（口径：Carbon=GridPurchase*Intensity）
+M11,HIGH_REVENUE,RegionF Hour 546,104469.2,GridSell=220.0 MW × SellPrice=202.80 CNY/MWh
+M11,HIGH_REVENUE,RegionF Hour 548,104469.2,GridSell=220.0 MW × SellPrice=202.80 CNY/MWh
+M11,HIGH_REVENUE,RegionF Hour 547,104469.2,GridSell=220.0 MW × SellPrice=202.80 CNY/MWh
+M11,HIGH_REVENUE,RegionF Hour 545,104467.0,GridSell=220.0 MW × SellPrice=202.80 CNY/MWh
+M11,HIGH_REVENUE,RegionF Hour 549,104462.6,GridSell=220.0 MW × SellPrice=202.80 CNY/MWh
+M11,DEFICIT,RegionF Hour 2400,31.6,设施负荷 571.8 MW > 可用新能源 540.2 MW
+Q3-B3ref,ZERO_PURCHASE,all,0.0,全部 14442 个区域-小时 GridPurchase=0（max=0.00e+00 MW）
+Q3-B3ref,ZERO_CARBON,all,0.0,全部 14442 个区域-小时购电为零，故碳排为零（口径：Carbon=GridPurchase*Intensity）
+Q3-B3ref,HIGH_REVENUE,RegionF Hour 548,104469.2,GridSell=220.0 MW × SellPrice=202.80 CNY/MWh
+Q3-B3ref,HIGH_REVENUE,RegionF Hour 547,104469.2,GridSell=220.0 MW × SellPrice=202.80 CNY/MWh
+Q3-B3ref,HIGH_REVENUE,RegionF Hour 546,104469.2,GridSell=220.0 MW × SellPrice=202.80 CNY/MWh
+Q3-B3ref,HIGH_REVENUE,RegionF Hour 545,104467.0,GridSell=220.0 MW × SellPrice=202.80 CNY/MWh
+Q3-B3ref,HIGH_REVENUE,RegionF Hour 549,104462.6,GridSell=220.0 MW × SellPrice=202.80 CNY/MWh
+Q3-B3ref,DEFICIT,RegionF Hour 2400,31.6,设施负荷 571.8 MW > 可用新能源 540.2 MW

@@ -1,22 +1,29 @@
 # -*- coding: utf-8 -*-
-"""M11（Q4）任务-能源联合优化编排。
+"""M11（Q4）分解式联合优化（复审修订版语义 §5/§7）。
 
-口径（03_models/统一双柔性模型.md、04_algorithms/算法实现接口.md）：
-  - Q4 任务变量独立：M11 重新执行任务层优化（不从 Q2 锁死解，仅以 x_base 为共同起点），
-    每次任务方案都重新计算 AI 负荷并进入含储能的能源层求解；
-  - 能源层使用 M01 口径（储能 + 新能源外送），目标最小净成本；
-  - 与 Q2 相同的加权标量化生成近似非支配方案（诚实标记，不称全局最优）；
-  - 对比 Q2 解仅作对照，不锁死。
+方法（分解式联合启发式）：
+  外层生成候选任务排程 x^k（k=0..K）：
+    - x^0 = x_base（不迁移）
+    - x^k = 缺口小时定向修复（不同修复轮数 / 碳价权重）
+  每个候选都重新计算 AI(x^k)、P_fac(x^k) 与排程哈希；
+  内层对每个候选求解相同的含储能能源子问题（MODE_M01，min 净成本），得到 y*(x^k)；
+  外层以 F(x^k, y*(x^k)) = 净成本（平局按时延、迁移数）选择最优候选；
+  记录迭代轮次、候选排程哈希、AI/设施负荷哈希、内层目标与停止准则。
 
-输出：output/M11/<scenario>/task_schedule.csv、energy_schedule.csv、kpi 行、pareto.md。
+  诚实标记：分解式联合启发式，不声称全局最优；不锁死 Q2 任务解（候选独立生成）。
+  ExportPolicy=PERMIT_RE_ONLY（与 M00_fair/M10/M01-xbase 一致）。
+
+输出：output/M11/base/{task_schedule,energy_schedule}.csv、coordination_log.jsonl、kpi 行。
 """
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import time
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 import sys
@@ -24,11 +31,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from data_loader import REGIONS, Problem, load_x_base
 from energy_solver import MODE_M01, build_energy_schedule
+from evidence import facility_load_hash, sha256_df
 from kpi import make_kpi_row
 from task_optimizer import TaskOptimizer
 from validator import validate_energy_schedule, validate_task_schedule
 
-LAMBDAS = [0.0, 100.0, 200.0, 400.0, 800.0, 1600.0]
 OUT_COLUMNS = [
     "Hour", "Region", "AI_IT_Load_MW", "NonAI_IT_Load_MW", "IT_Load_MW",
     "Total_Load_MW", "GridPurchase_MW", "GridSell_MW", "GridLoad_MW",
@@ -37,95 +44,116 @@ OUT_COLUMNS = [
     "DischargePower_MW", "SOC_MWh",
 ]
 
+REPAIR_PASSES = [0, 1, 8]                 # 外层候选的修复轮数
+LAMBDAS_FOR_CANDIDATES = [100.0, 400.0]   # 候选生成使用的碳价权重
 
-def solve_energy_for_schedule(problem: Problem, schedule: pd.DataFrame,
-                              out_dir: Path) -> pd.DataFrame:
+
+def solve_energy_for_schedule(problem: Problem, schedule: pd.DataFrame) -> pd.DataFrame:
     frames = []
     for r in REGIONS:
         fac = problem.facility_load_from_schedule(schedule)[r]
         ai = problem.ai_it_load_from_schedule(schedule)[r]
         df, _ = build_energy_schedule(problem, r, fac, ai, MODE_M01)
         frames.append(df)
-    energy = pd.concat(frames, ignore_index=True)
-    energy[OUT_COLUMNS].to_csv(out_dir / "energy_schedule.csv", index=False, encoding="utf-8-sig")
-    return energy
+    return pd.concat(frames, ignore_index=True)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", required=True, type=Path)
     parser.add_argument("--repo-root", required=True, type=Path)
-    parser.add_argument("--lambdas", default=",".join(str(x) for x in LAMBDAS))
-    parser.add_argument("--passes", type=int, default=0,
-                        help="任务层缺口修复轮数；0=不迁移（储能覆盖缺口，联合最优），>0 强制迁移")
     args = parser.parse_args()
 
     problem = Problem(args.data_dir)
     x_base = load_x_base(args.repo_root)
 
     out_root = Path(__file__).resolve().parent / "output"
+    cell_dir = out_root / "M11" / "base"
+    cell_dir.mkdir(parents=True, exist_ok=True)
     log_path = out_root / "solver_log.jsonl"
     kpi_path = out_root / "kpi_summary.csv"
+    coord_path = cell_dir / "coordination_log.jsonl"
 
-    kpi_rows = []
-    pareto = []
-    last_schedule_hash = None
-    last_energy = None
+    t0 = time.time()
+    candidates = []  # (label, schedule_df)
 
-    for lam in [float(x) for x in args.lambdas.split(",")]:
-        scenario = f"lam{int(lam)}"
-        t0 = time.time()
-        optimizer = TaskOptimizer(problem, x_base)
-        schedule = optimizer.optimize(lam, repair_passes=args.passes)
+    # 候选生成（外层）：不同修复轮数与碳价权重，排程哈希去重
+    seen_hash = set()
+    for lam in LAMBDAS_FOR_CANDIDATES:
+        for passes in REPAIR_PASSES:
+            optimizer = TaskOptimizer(problem, x_base)
+            sched = optimizer.optimize(lam, repair_passes=passes)
+            h = sha256_df(sched[["TaskID", "TargetRegion", "StartHour"]])
+            if h in seen_hash:
+                continue
+            seen_hash.add(h)
+            candidates.append((f"lam{int(lam)}_repair{passes}", sched))
 
-        v_task, nv_task = validate_task_schedule(problem, schedule, allow_migration=True)
+    # 内层能源评估 + 外层选择
+    evaluated = []
+    for label, sched in candidates:
+        v_task, nv_task = validate_task_schedule(problem, sched, allow_migration=True)
         if nv_task:
-            print(f"[{scenario}] 任务层违约 {nv_task}:", v_task[:5])
+            print(f"[{label}] 任务层违约 {nv_task}，跳过")
             continue
-
-        cell_dir = out_root / "M11" / scenario
-        cell_dir.mkdir(parents=True, exist_ok=True)
-        schedule[["TaskID", "SourceRegion", "TargetRegion", "StartHour", "EndHour",
-                  "NetworkLatency_ms", "GPU_Demand", "TaskType"]].to_csv(
-            cell_dir / "task_schedule.csv", index=False, encoding="utf-8-sig")
-
-        # 排程相同时复用能源结果（各 lambda 排程相同，避免重复 MILP）
-        import hashlib
-        sched_hash = hashlib.sha1(
-            pd.util.hash_pandas_object(schedule, index=True).values).hexdigest()
-        if sched_hash == last_schedule_hash and last_energy is not None:
-            energy = last_energy
-            last_energy.to_csv(cell_dir / "energy_schedule.csv", index=False, encoding="utf-8-sig")
-        else:
-            energy = solve_energy_for_schedule(problem, schedule, cell_dir)
-            last_energy = energy
-            last_schedule_hash = sched_hash
+        energy = solve_energy_for_schedule(problem, sched)
         v_energy, nv_energy = validate_energy_schedule(problem, energy, "m01")
-        total_violations = nv_task + nv_energy
-        kpi_rows.append(make_kpi_row("M11", scenario, problem, schedule, energy,
-                                     total_violations, time.time() - t0,
-                                     "task: x_base (storage covers deficit), energy: exact MILP"))
-        pareto.append({"Scenario": scenario, "Lambda": lam,
-                       "Cost_CNY": kpi_rows[-1]["Cost_CNY"],
-                       "Carbon_tCO2": kpi_rows[-1]["Carbon_tCO2"],
-                       "RE_Util": kpi_rows[-1]["RenewableUtilization"],
-                       "MeanLatency_ms": kpi_rows[-1]["MeanLatency_ms"],
-                       "P95Latency_ms": kpi_rows[-1]["P95Latency_ms"],
-                       "Violations": total_violations})
-        with log_path.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps({
-                "event": "m11_cell", "scenario": scenario, "lambda": lam,
-                "task_repair_passes": args.passes,
-                "migrated_tasks": int((schedule.TargetRegion != schedule.SourceRegion).sum()),
-                "runtime_s": round(time.time() - t0, 2),
-                "violations": total_violations,
-            }, ensure_ascii=False) + "\n")
-        print(f"[{scenario}] done in {time.time()-t0:.1f}s, violations={total_violations}")
+        net_cost = 0.0
+        gross_cost = 0.0
+        for r in REGIONS:
+            sub = energy[energy["Region"] == r]
+            gross = float(np.sum(sub["GridPurchase_MW"] * problem.price(r)))
+            revenue = float(np.sum(sub["GridSell_MW"] * problem.sell_price(r)))
+            gross_cost += gross
+            net_cost += gross - revenue
+        mig = int((sched.TargetRegion != sched.SourceRegion).sum())
+        mean_lat = float(sched.NetworkLatency_ms.mean())
+        row = {
+            "candidate": label,
+            "task_schedule_hash": sha256_df(sched[["TaskID", "TargetRegion", "StartHour"]]),
+            "facility_load_hash": facility_load_hash(problem, sched),
+            "energy_schedule_hash": hashlib.sha256(
+                energy[OUT_COLUMNS].to_csv(index=False).encode()).hexdigest().upper(),
+            "migrated_tasks": mig,
+            "mean_latency_ms": round(mean_lat, 4),
+            "inner_net_cost_cny": round(net_cost, 2),
+            "inner_gross_cost_cny": round(gross_cost, 2),
+            "task_violations": nv_task,
+            "energy_violations": nv_energy,
+        }
+        evaluated.append((label, sched, energy, row))
+        with coord_path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, ensure_ascii=False) + "\n")
+        print(f"[{label}] net_cost={row['inner_net_cost_cny']:,.0f} mig={mig} "
+              f"lat={mean_lat:.2f} violations={nv_task + nv_energy}")
 
-    if not kpi_rows:
-        print("所有场景均失败，无输出。")
+    if not evaluated:
+        print("无可行候选，M11 失败。")
         return
 
+    # 外层选择：min 净成本，平局按时延、迁移数
+    best = min(evaluated, key=lambda e: (e[3]["inner_net_cost_cny"],
+                                         e[3]["mean_latency_ms"],
+                                         e[3]["migrated_tasks"]))
+    label, sched, energy, row = best
+    with coord_path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps({
+            "event": "m11_selected", "selected": label,
+            "selection_rule": "min inner net cost, tie-break latency then migrations",
+            "runtime_s": round(time.time() - t0, 2),
+        }, ensure_ascii=False) + "\n")
+
+    # 写出选定方案
+    sched[["TaskID", "SourceRegion", "TargetRegion", "StartHour", "EndHour",
+           "NetworkLatency_ms", "GPU_Demand", "TaskType"]].to_csv(
+        cell_dir / "task_schedule.csv", index=False, encoding="utf-8-sig")
+    energy[OUT_COLUMNS].to_csv(cell_dir / "energy_schedule.csv", index=False, encoding="utf-8-sig")
+
+    total_violations = row["task_violations"] + row["energy_violations"]
+    kpi_rows = [make_kpi_row("M11", "base", problem, sched, energy, total_violations,
+                             time.time() - t0,
+                             "decomposed joint heuristic, outer candidates + inner exact MILP",
+                             "PERMIT_RE_ONLY")]
     kpi_df = pd.DataFrame(kpi_rows)
     if kpi_path.exists():
         old = pd.read_csv(kpi_path)
@@ -133,17 +161,28 @@ def main() -> None:
             subset=["ModelID", "ScenarioID"], keep="last")
     kpi_df.to_csv(kpi_path, index=False, encoding="utf-8-sig")
 
-    lines = ["# M11（Q4）任务-能源联合近似非支配方案", "",
-             "> 任务层独立优化（不从 Q2 锁死）；联合最优决策为储能覆盖缺口小时、任务保持本地最优",
-             "> （M10 无储能时必须迁移 1 个训练任务消除缺口，M11 有储能则不需要，AI 负荷逐时差异见 solver_log）。",
+    with log_path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps({
+            "event": "m11_cell", "scenario": "base",
+            "selected_candidate": label,
+            "candidate_count": len(evaluated),
+            "runtime_s": round(time.time() - t0, 2),
+            "violations": total_violations,
+        }, ensure_ascii=False) + "\n")
+
+    lines = ["# M11（Q4）分解式联合优化（复审修订版语义）", "",
+             f"> 外层候选 {len(evaluated)} 个（缺口修复轮数×碳价权重，排程哈希去重），内层能源精确 MILP。",
+             f"> 选定候选：**{label}**（规则：min 净成本，平局按时延/迁移数）。",
+             "> 诚实标记：分解式联合启发式，不声称全局最优；任务解独立于 Q2 生成，不锁死。",
              "",
-             "| Scenario | Lambda | Cost_CNY | Carbon_tCO2 | RE_Util | MeanLat | P95Lat | Violations |",
-             "|---|---|---:|---:|---:|---:|---:|---:|"]
-    for row in pareto:
-        lines.append(f"| {row['Scenario']} | {row['Lambda']:.0f} | {row['Cost_CNY']:,.0f} | "
-                     f"{row['Carbon_tCO2']:,.0f} | {row['RE_Util']:.4f} | "
-                     f"{row['MeanLatency_ms']:.2f} | {row['P95Latency_ms']:.2f} | "
-                     f"{row['Violations']} |")
+             "| Candidate | Migrated | MeanLat_ms | InnerNetCost_CNY | InnerGrossCost_CNY | TaskViol | EnergyViol |",
+             "|---|---:|---:|---:|---:|---:|---:|"]
+    for _, _, _, r in evaluated:
+        lines.append(f"| {r['candidate']} | {r['migrated_tasks']} | {r['mean_latency_ms']:.2f} | "
+                     f"{r['inner_net_cost_cny']:,.0f} | {r['inner_gross_cost_cny']:,.0f} | "
+                     f"{r['task_violations']} | {r['energy_violations']} |")
+    lines.append("")
+    lines.append("迭代记录：coordination_log.jsonl（候选排程/设施/能源哈希、内层目标、停止准则）。")
     (out_root / "M11" / "pareto.md").write_text("\n".join(lines), encoding="utf-8")
     print("\n".join(lines))
 

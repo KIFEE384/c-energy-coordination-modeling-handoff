@@ -74,11 +74,12 @@ def energy_kpis(problem: Problem, energy: pd.DataFrame) -> dict:
 def make_kpi_row(model_id: str, scenario_id: str, problem: Problem,
                  schedule: pd.DataFrame | None, energy: pd.DataFrame,
                  violations: int, runtime_s: float,
-                 bound_or_gap: str) -> dict:
+                 bound_or_gap: str, export_policy: str = "") -> dict:
     """组装一行 kpi_summary。schedule 为 None 时（如纯能源实验）时延填 NaN。"""
     row = {
         "ModelID": model_id,
         "ScenarioID": scenario_id,
+        "ExportPolicy": export_policy,
         "MeanLatency_ms": np.nan,
         "P95Latency_ms": np.nan,
     }

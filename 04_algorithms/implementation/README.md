@@ -1,7 +1,7 @@
-# 算法模块（04_algorithms/implementation）
+# 算法模块（work/algorithm）
 
 C 题“面向算电协同的多目标调度优化研究”的算法实现与全部数值结果。
-所有代码遵循 `../算法实现接口.md` 的输出契约与验收断言；
+所有代码遵循 `04_algorithms/算法实现接口.md` 的输出契约与验收断言；
 口径与决策见 `07_decisions/decision_log.md`（尤其 DEC-008）。
 
 ## 模块文件
@@ -12,21 +12,24 @@ C 题“面向算电协同的多目标调度优化研究”的算法实现与全
 | `energy_solver.py` | 能源层求解：M00/M10 闭式解，M01/M11 能源层 HiGHS MILP（储能+外送，充放电与购售电互斥） |
 | `kpi.py` | KPI 计算（成本=购电毛成本；碳排；新能源利用率；时延；峰值/标准差购电） |
 | `validator.py` | 任务层与能源层全部验收断言（唯一指派/即开/截止期/时延/容量/守恒/SOC/互斥/终端） |
-| `task_optimizer.py` | M10/M11 任务层：以 x_base 为基础的缺口小时定向修复（迁移/时移，防新增缺口守卫） |
+| `task_optimizer.py` | M10/M11 任务层：静态影子成本 + 贪心指派 + 局部搜索（加权标量化近似 Pareto） |
 | `run_energy_cells.py` | 能源四格运行：M00 / M01（主+min-carbon）/ Q3(B3_ref) + B_ref 参照 |
 | `run_q2_m10.py` | Q2/M10：多 lambda 任务优化 + M10 能源层 + 近似非支配表 |
-| `run_q4_m11.py` | Q4/M11：任务层独立决策（储能覆盖缺口则不迁移）+ 含储能能源层 |
+| `run_q4_m11.py` | Q4/M11：任务重新优化（不锁死 Q2）+ 含储能能源层 |
 | `run_summary.py` | 四格 KPI 汇总、改善率、S_K 计算 |
 | `small_sample_gap.py` | M10 小样本精确 gap（CP-SAT 48 小时窗口） |
 | `q1_prediction.py` | Q1A 需求画像与预测（SNaive24/168、HW24、滞后特征 RF；训练/验证/测试切分） |
 | `q1_schedule.py` | Q1B x_Q1 基础调度输出与验证（与 x_base 同规则） |
 
-## 结果输出
+## 结果输出（output/）
 
-脚本运行时在 `output/` 下生成全部结果（kpi_summary.csv、solver_log.jsonl、各模型
-energy_schedule/task_schedule、q1 预测与甘特、summary、q2_gap 等）；
-**关键产物已镜像到 `../results/`**（推荐场景 λ=100 的 M10/M11 排程、四格能源表、
-Q1 预测与模型选择、S_K 与 gap 报告），论文手直接读取 `04_algorithms/results/` 即可。
+- `kpi_summary.csv`：全部模型/场景的统一 KPI 表（契约列 + 扩展列 SellRevenue_CNY/NetCost_CNY）
+- `solver_log.jsonl`：逐区域/逐场景求解日志（含残差、RegionE Hour0 数据质量标记）
+- `M00/ M01/ M01_mincarbon/ Q3_B3ref/`：energy_schedule.csv
+- `M10/<scenario>/ M11/<scenario>/`：task_schedule.csv + energy_schedule.csv
+- `q1/`：series.csv、predictions_test.csv、model_selection.md、x_Q1_task_schedule.csv、gantt_last24h.csv
+- `summary/four_cell_summary.md`、`summary/S_K_table.csv`
+- `q2_gap/gap_report.md`
 
 ## 关键结果速览（推荐场景 M10/M11 λ=100）
 
